@@ -18,8 +18,8 @@ html:
         meta(charset='utf-8'):
         favicon(href= '[[=URL("static/images/favicon.ico")]]'):
         CSS:
-    title:
-        "vue3pyj"
+        title:
+            "vue3pyj"
     body:
         div(id = "app"):
     script(src = '[[=URL("$js_base/index.js")]]', type = 'text/javascript'):
