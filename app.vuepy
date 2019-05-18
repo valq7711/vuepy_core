@@ -27,7 +27,8 @@ Vue.options.components = {
     error: cerror.make(),
     app_selector: app_selector.make(),
 }
-window.store = Store(rs_req)
+web23py = document.getElementsByTagName('meta')[0].dataset.web23py
+window.store = Store(rs_req, web23py)
 
 vc = V_collector()
 class App(RS_vue):
@@ -37,7 +38,7 @@ class App(RS_vue):
         self.template = app_templ
         self.map_store = {
             show_explorer: 'show_explorer',
-            w3p_app: 'w3p_app'
+            w23p_app: 'w23p_app'
         }
         self.components = {
             folder_content: folder_content.make(),
@@ -51,10 +52,10 @@ class App(RS_vue):
 
     @common.asyncer
     def mounted(self):
-        yield store.dispatch('w3p_app_list')
+        yield store.dispatch('w23p_app_list')
         store.commit('toggle_busy', False)
-        while not self.w3p_app:
-            app2edit = yield store.dispatch('start_modal', 'app_selector', {app_list: store.get('w3p_app_list')} )
+        while not self.w23p_app:
+            app2edit = yield store.dispatch('start_modal', 'app_selector', {app_list: store.get('w23p_app_list')} )
             if app2edit!='cancel':
                 yield store.dispatch('load_fs_from_srv', app2edit)
 

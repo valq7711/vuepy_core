@@ -68,7 +68,7 @@ v-def templ_editor:
             div:
                 h2(style ='background-color: white'):
                     span(style = 'color: #42b983;'):'Vue'
-                    span(class = 'v2p_char',  style = 'color: black;'):'3'
+                    span(class = 'v2p_char',  style = 'color: black;'):'{{w23p_ver}}'
                     span(class = 'v2p_char',style = 'color: #006ea5;'):'p'
                     span(class = 'v2p_char',style = 'color: #bfa03b;'):'y'
                     i(class = 'v2p_char',style = 'color: #b00;'):'j'
@@ -117,6 +117,7 @@ class Editor(RS_vue):
             mount_cm:'/editor.mount_cm*',
             swap_doc:'/editor.swap_doc*',
             close:'/editor.close*',
+            web23py:'web23py',
         }
     def _init_data(self):
         ret={
@@ -124,6 +125,10 @@ class Editor(RS_vue):
             error: None
         }
         return ret
+
+    @vc.computed
+    def w23p_ver(self):
+        return /^.+(\d)/.exec(self.web23py)[1]
 
     @vc.computed
     def doc_num(self):

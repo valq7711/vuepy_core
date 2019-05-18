@@ -1,28 +1,25 @@
 def RS(%tag = 'script', %verbatim, %compiler = 'rapydscript', type = "text/javascript" ):
 def favicon(%tag = 'link',  rel="shortcut icon", type="image/x-icon"):
 
-$css_base = static/css
-$js_base = static/js
-$font_base = static/fonts
 
 def CSS:
-    link(rel="stylesheet", type="text/css", href= '[[=URL("$font_base/font-awesome.min.css")]]'):
-    link(rel="stylesheet", type="text/css", href= '[[=URL("$css_base/stupid.css")]]'):
-    link(rel="stylesheet", type="text/css", href= '[[=URL("$css_base/app0.css")]]'):
-    link(rel="stylesheet", type="text/css", href= '[[=URL("$js_base/codemirror/lib/codemirror.css")]]'):
-    link(rel="stylesheet", type="text/css", href= '[[=URL("$js_base/codemirror/addon/hint/show-hint.css")]]'):
-    link(rel="stylesheet", type="text/css", href= '[[=URL("$js_base/codemirror/addon/dialog/dialog.css")]]'):
+    link(rel="stylesheet", type="text/css", href= '[[=URL("static", "fonts/font-awesome.min.css")]]'):
+    link(rel="stylesheet", type="text/css", href= '[[=URL("static", "css/stupid.css")]]'):
+    link(rel="stylesheet", type="text/css", href= '[[=URL("static", "css/app0.css")]]'):
+    link(rel="stylesheet", type="text/css", href= '[[=URL("static", "js/codemirror/lib/codemirror.css")]]'):
+    link(rel="stylesheet", type="text/css", href= '[[=URL("static", "js/codemirror/addon/hint/show-hint.css")]]'):
+    link(rel="stylesheet", type="text/css", href= '[[=URL("static", "js/codemirror/addon/dialog/dialog.css")]]'):
 
 html:
     head:
-        meta(charset='utf-8'):
-        favicon(href= '[[=URL("static/images/favicon.ico")]]'):
+        meta(charset='utf-8', data-web23py = '[[=web23py]]'):
+        favicon(href= '[[=URL("static", "images/favicon.ico")]]'):
         CSS:
         title:
-            "vue3pyj"
+            '[[= title]]'
     body:
         div(id = "app"):
-    script(src = '[[=URL("$js_base/index.js")]]', type = 'text/javascript'):
+    script(src = '[[=URL("static", "js/index.js")]]', type = 'text/javascript'):
 
 v-pyj:
     # index.js

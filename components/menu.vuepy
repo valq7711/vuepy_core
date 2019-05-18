@@ -31,7 +31,7 @@ class Menu(RS_vue):
         self.map_store = {
             #is_logged_in: '/user.is_logged_in',
             #user_name: '/user.user_name'
-            w3p_app: 'w3p_app'
+            w23p_app: 'w23p_app'
         }
         self.template = templ_menu
         self.props = {

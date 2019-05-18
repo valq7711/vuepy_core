@@ -9,7 +9,7 @@ def default_():
     ret = {
         left: [
             {label: '<i class = "fa fa-power-off"></i>', href: '#cmd:select_app'},
-            {label: '${w3p_app}', href: '#cmd:toggle_explorer'},
+            {label: '${w23p_app}', href: '#cmd:toggle_explorer'},
             {label: 'Save', href: '#cmd:save' },
             {label: 'Compile', href: '#cmd:compile'},
             {label: 'Editor',subitems: [
@@ -21,7 +21,7 @@ def default_():
             {label: 'ritem1', slot: 'search'},
             user,
             {label: 'flash', slot: 'flash'},
-            {label: 'Errors', href: '../../admin/default/errors/${w3p_app}',
+            {label: 'Errors', href: '../../admin/default/errors/${w23p_app}',
                 attrs: { target : '_blank', rel : 'noopener'}
             }
         ]

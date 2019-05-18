@@ -4,7 +4,8 @@ from asset.fs import FS
 from asset.vuepy_compiler import vuepy_compile, rs_compile
 import asset.vuepy_output as vuepy_output
 import .editor, .explorer
-import api.server as server
+#import api.server as server
+import server
 import app_menu
 
 def default_state():
@@ -13,8 +14,9 @@ def default_state():
         flash: {msg:'Hi', status:'', component: None, cargs: None},
         is_busy: True,
         menus: app_menu.get_factory().default(),
-        w3p_app: None,
-        w3p_app_list: None,
+        web23py: None, # web2py | web3py
+        w23p_app: None,
+        w23p_app_list: None,
         get_fs: None,
         get_CM: None,
         show_explorer: False,
@@ -70,8 +72,8 @@ class State(RS_state_api):
         self.state.show_explorer = onoff
 
     @vc.mutation
-    def set_w3p_app(self, w3p_app):
-        self.state.w3p_app = w3p_app
+    def set_w23p_app(self, w23p_app):
+        self.state.w23p_app = w23p_app
 
     @vc.mutation
     def flash(self, msg, status):
@@ -86,19 +88,35 @@ class State(RS_state_api):
         self.state.flash.status = status
 
 class Store(RS_store):
-    def __init__(self, rs_req):
+    def __init__(self, rs_req, web23py):
         #self.vue
         self.state_api = State(self.vue, self.getter_factory.bind(self))
+        self.state_api.state.web23py = web23py
         self.actions = vc._actions
 
         # api
         self_app = window.location.pathname.split('/',2)[1]
         self.api = {}
-        self.api.server = server.Server(rs_req.get('axios.min'), '/' + self_app, self.$bus)
+        api_baseURL = web23py is 'web3py'? self_app : self_app + '/default/call/json'
+        self.api.server = server.API(rs_req.get('axios.min'), '/' + api_baseURL, self.$bus)
         self.api.fs = FS()
         self.api.CM = rs_req.get('codemirror/lib/codemirror')
         self.state_api.state.get_fs = def(): return self.api.fs;
         self.state_api.state.get_CM = def(): return self.api.CM;
+        # output for compile
+        html_dir = {
+            'web2py': '/views',
+            'web3py': '/templates',
+        }
+        self.output_path_map = {
+            'html': def(pth):
+                        pth = pth.split('/')
+                        pth[0] is 'root' or not pth[0] and pth.shift()
+                        pth[0] = html_dir[web23py] # replace `vuepy`
+                        return pth.join('/') + '.html'
+            , 'js': '/static/js/',
+            'css': '/static/css/',
+         }
 
         # modules
         self.mount_module(editor.Store(self), 'editor')
@@ -119,8 +137,8 @@ class Store(RS_store):
             fdata.path = fs.path_by_id(fid).path
             fdata.content = fdata.obj.content
             del fdata.obj
-            fdata.w3p_app = self.get('w3p_app')
-            self.api.server.default.post(cmd, {fdata: fdata}) \
+            fdata.w23p_app = self.get('w23p_app')
+            self.api.server.post(cmd, {fdata: fdata}) \
               .then( def(resp):
                     print('server_resp: ', resp.data)
                     if cmd is 'write_file' and resp.data.md5_hash and not resp.data.error:
@@ -144,8 +162,8 @@ class Store(RS_store):
 
     @vc.action
     @asyncer
-    def w3p_app_list(self):
-        self.state_api.state.w3p_app_list = (yield self.api.server.default.get('app_list', [])).data.app_list
+    def w23p_app_list(self):
+        self.state_api.state.w23p_app_list = (yield self.api.server.get('app_list')).data.app_list
 
     # shortcut for flash
     def flash(self, *args):
@@ -178,22 +196,22 @@ class Store(RS_store):
             self.dispatch('/editor.close_all')
     @vc.action
     @asyncer
-    def load_fs_from_srv(self, w3p_app):
+    def load_fs_from_srv(self, w23p_app):
         fs = self.api.fs
         self.commit('toggle_busy', True)
         try:
-            ret = (yield self.api.server.default.get('get_fs', [w3p_app]))
+            ret = (yield self.api.server.get('get_fs', [w23p_app]))
         except as err:
             pass
-        self.dispatch('load_fs', ret.data, w3p_app)
+        self.dispatch('load_fs', ret.data, w23p_app)
         self.commit('toggle_busy', False)
         return ret
 
     @vc.action
-    def load_fs(self, data, w3p_app):
+    def load_fs(self, data, w23p_app):
         self.api.fs.loads(data)
-        self.commit('set_w3p_app', w3p_app)
-        self.$emit('fs_restored', w3p_app)
+        self.commit('set_w23p_app', w23p_app)
+        self.$emit('fs_restored', w23p_app)
 
     @vc.action
     def start_modal(self, inner, args):
@@ -218,9 +236,9 @@ class Store(RS_store):
     @asyncer
     def select_app(self):
         self.commit('toggle_busy', True)
-        yield self.dispatch('w3p_app_list')
+        yield self.dispatch('w23p_app_list')
         self.commit('toggle_busy', False)
-        app = yield self.dispatch('start_modal', 'app_selector', {app_list: self.get('w3p_app_list')} )
+        app = yield self.dispatch('start_modal', 'app_selector', {app_list: self.get('w23p_app_list')} )
         if app!='cancel':
             self.dispatch('/editor.close_all')
             self.commit('/explorer.set_dir', 0)
@@ -245,7 +263,7 @@ class Store(RS_store):
         if not compile_only:
             fs = self.api.fs
             off = fs.on('write_file', def(fid): self.dispatch('/editor.reload', fid);)
-            vuepy_output.output(compiled, self.api.fs)
+            vuepy_output.output(compiled, self.api.fs, self.output_path_map)
             off()
             self.$emit('fs_changed')
         return compiled
