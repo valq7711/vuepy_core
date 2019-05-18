@@ -11,7 +11,7 @@ map_store = {
     upload_notes: '*'
 }
 '''
-#import server
+
 from asset.rs_vue import V_collector,  RS_store, RS_state_api
 from asset.common import asyncer
 import asset.common as common

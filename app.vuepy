@@ -19,7 +19,7 @@ import components.folder_content as folder_content, components.editor as editor,
         components.app_selector as app_selector,components.base_layout as base_layout
 import components.error as cerror
 from store.root import Store
-from api.server import Server
+
 
 Vue.use(Store)
 Vue.options.components = {
