@@ -1,17 +1,3 @@
-'''
-map_store = {
-    wmsg : '/account.welcome_msg',
-    login : '/account.login~',
-    loggedin : '/account.loggedin',
-    add_note: '~',
-    cur_note: 'cur_note',
-    notes: 'notes',
-    last_note_id: 'last_note_id',
-    download_notes: 'download_notes*',
-    upload_notes: '*'
-}
-'''
-
 from asset.rs_vue import V_collector,  RS_store, RS_state_api
 from asset.common import asyncer
 import asset.common as common
