@@ -239,10 +239,14 @@ class Store(RS_store):
         yield self.dispatch('w23p_app_list')
         self.commit('toggle_busy', False)
         app = yield self.dispatch('start_modal', 'app_selector', {app_list: self.get('w23p_app_list')} )
-        if app!='cancel':
-            self.dispatch('/editor.close_all')
-            self.commit('/explorer.set_dir', 0)
-            return self.dispatch('load_fs_from_srv', app)
+        if app is 'cancel':
+            return
+
+        if not (yield self.dispatch('/editor.close_all')):
+            return
+
+        self.commit('/explorer.set_dir', 0)
+        return self.dispatch('load_fs_from_srv', app)
 
     @vc.action
     def compile(self, compiler, s, fp, compile_only):

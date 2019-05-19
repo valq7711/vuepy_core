@@ -210,8 +210,12 @@ class Store(RS_store):
     @vc.action
     @asyncer
     def close_all(self):
+        all_closed = True
         for k in self.get('doc_infos'):
-            yield self.dispatch('close', k)
+            maybe_canceled = yield self.dispatch('close', k)
+            if maybe_canceled is 'cancel':
+                all_closed = False
+        return all_closed
 
     @vc.action
     @asyncer
@@ -221,7 +225,7 @@ class Store(RS_store):
             ok_cancel =  yield self.root.start_modal('confirm',
                            {message: doc_info.name + ' is not saved! Do you want to continue?'})
             if ok_cancel is 'cancel':
-                return
+                return 'cancel'
         aw = self.get('active_window')
         cur_doc_num = self.get('windows')[aw].doc_num
         if cur_doc_num != doc_num:
