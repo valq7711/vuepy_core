@@ -102,7 +102,7 @@ v-def templ_editor:
 
 v-pyj:
 +++
-from asset.rs_vue import v_meth, v_computed, v_watch, RS_vue, V_collector
+from asset.rs_vue import RS_vue, V_collector
 
 vc = V_collector()
 class Editor(RS_vue):
