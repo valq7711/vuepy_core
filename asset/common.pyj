@@ -177,15 +177,22 @@ def make_drag_listener(catcher, debounce):
 
 def blur_click_listener(el, cb):
     ret = {}
-    blur = False
+    blur = {}
+    last_id = 0
     listen = False # stopped
     def doc_click_cap(e):
-        nonlocal blur
-        blur = True
-        setTimeout(def(): blur and cb(e);, 0)
+        nonlocal blur, last_id
+        last_id +=1
+        id = last_id
+        blur[last_id] = True
+        setTimeout(
+            def():
+                _blur = blur[id]
+                del blur[id]
+                _blur and cb(e)
+        , 0)
     def el_click(e):
-        nonlocal blur
-        blur = False
+        blur[last_id] = False
     ret.start = def():
         nonlocal listen
         if listen: return

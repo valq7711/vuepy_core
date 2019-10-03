@@ -245,7 +245,7 @@ class Folder_content(RS_vue):
             self.listener.stop()
 
     def mounted(self):
-        self.listener = blur_click_listener(self.$el, def(): self.$emit('blur');)
+        self.listener = blur_click_listener(self.$el, def(e): self.$emit('blur', e);)
 
     def beforeDestroy(self):
         self.listener.stop()
