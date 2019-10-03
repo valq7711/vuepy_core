@@ -1,39 +1,82 @@
 #common.pyj
+
+class Merge_call:
+    def set_key(self, a):
+        self.cmd = 'set_key'
+        self.args = a
+        return self
+    def merge(self, a):
+        self.cmd = 'merge'
+        self.args = a
+        return self
+
 def asyncer(fun):
-    ctx = {self:undefined, args: undefined}
-    def pret(ok, err):
-        def inner(f, ret_v, ret_throw):
-            if ret_throw:
-                v = ret_throw
-            else:
-                try:
-                    f = f or fun.apply(ctx.self, ctx.args)
-                    v = f.next(ret_v)
-                except as e:
+    merge_call = {}
+    def wrap(ctx):
+        def pret(ok, err):
+            def inner(f,  opt):
+                if opt:
+                    ret_v = opt.ret_v
+                    ret_throw =  opt.ret_throw
+                    merge_key = opt.merge_key
+
+                def _err(e, merge_key):
                     err(e)
-                    return
-            if not v.done:
-                if isinstance(v.value, Promise):
-                    v.value.then(def(ret_v): inner(f, ret_v);,
-                                 def(e):
-                                     try:
-                                         v = f.throw(e)
-                                     except as e:
-                                         err(e)
-                                         return
-                                     inner(f, None, v);
-                    )
+                    if merge_key:
+                        merge_call[merge_key].map(def(cb): cb.err(e);)
+                        del merge_call[merge_key]
+
+                if ret_throw:
+                    v = ret_throw
                 else:
-                    Promise.resolve(v.value).then(def(ret_v): inner(f, ret_v);)
-            else:
-                ok(v.value)
-        inner()
+                    try:
+                        f = f or fun.apply(ctx.self, ctx.args)
+                        v = f.next(ret_v)
+                    except as e:
+                        _err(e, merge_key)
+                        return
+                if isinstance(v.value, Merge_call):
+                    if v.value.cmd == 'get_keys':
+                        Promise.resolve(Object.keys(merge_call))
+                        .then(def(ret_v):  inner(f, {ret_v: ret_v, merge_key: merge_key}); )
+                    elif v.value.cmd == 'merge':
+                        if (p = merge_call[v.value.args]):
+                            p.push({ok: def(v): ok(v);, err: def(v): err(v);})
+                            return
+                        else:
+                            merge_key = v.value.args
+                            merge_call[merge_key] = []
+                            Promise.resolve(None).then(def(ret_v): inner(f, {ret_v: ret_v, merge_key: merge_key});)
+                    else:
+                        Promise.resolve(None).then(def(ret_v): inner(f, {ret_v: ret_v, merge_key: merge_key});)
+                elif not v.done:
+                    if isinstance(v.value, Promise):
+                        v.value.then(def(ret_v): inner(f, {ret_v: ret_v, merge_key: merge_key});,
+                                     def(e):
+                                         try:
+                                             v = f.throw(e)
+                                         except as e:
+                                             _err(e, merge_key)
+                                             return
+                                         inner(f, {ret_throw: v,  merge_key: merge_key});
+                        )
+                    else:
+                        Promise.resolve(v.value).then(def(ret_v): inner(f, {ret_v: ret_v, merge_key: merge_key});)
+                else:
+                    ok(v.value)
+                    if merge_key:
+                        merge_call[merge_key].map(def(cb): cb.ok(v.value);)
+                        del merge_call[merge_key]
+            inner()
+        return pret
     ret =  def():
-        ctx.self = this
-        ctx.args = arguments
-        return Promise(pret);
+        ctx = {self:this, args: arguments}
+        p = Promise(wrap(ctx))
+        return p
     ret.__name__ = fun.__name__ or fun.name
     return ret
+
+
 
 def upload_text():
     def prom(ok, err):
@@ -135,6 +178,7 @@ def make_drag_listener(catcher, debounce):
 def blur_click_listener(el, cb):
     ret = {}
     blur = False
+    listen = False # stopped
     def doc_click_cap(e):
         nonlocal blur
         blur = True
@@ -143,9 +187,15 @@ def blur_click_listener(el, cb):
         nonlocal blur
         blur = False
     ret.start = def():
+        nonlocal listen
+        if listen: return
         document.addEventListener('click', doc_click_cap, True)
         el.addEventListener('click', el_click, True)
+        listen = True
     ret.stop = def():
+        nonlocal listen
+        if not listen: return
         document.removeEventListener('click', doc_click_cap, True)
         el.removeEventListener('click', el_click, True)
+        listen = False
     return ret

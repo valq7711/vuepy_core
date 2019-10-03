@@ -36,6 +36,13 @@ class FS_local_keeper:
 class FS:
     FILE = 'file'
     DIR = 'dir'
+
+    def clear_content(self):
+        self.files = {}
+        self.dirs = {}
+        self.last_id = 0
+        self._reset_map_type_()
+
     def __init__(self):
         self.files = {}
         self.dirs = {}
@@ -49,6 +56,7 @@ class FS:
          del_file: []
         }
         self.fs_path = fs_path
+
     def  _doubles_in_dir_content(self):
         errors = []
         for dir_id in self.dirs:
