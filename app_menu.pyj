@@ -1,9 +1,9 @@
 
 def default_():
     user = {
-        label: 'Login',
-        href: '#login',
-        name: 'login',
+        label: 'Logout',
+        href: '#cmd:logout',
+        name: 'logout',
     }
 
     ret = {
@@ -24,6 +24,7 @@ def default_():
             {label: 'Errors', href: '../../admin/default/errors/${w23p_app}',
                 attrs: { target : '_blank', rel : 'noopener'}
             }
+            #{label:'Reload Apps', name:'reload_apps', href:'#cmd:reload_apps'}
         ]
     }
     return ret

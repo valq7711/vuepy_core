@@ -2,9 +2,8 @@ v-def app_templ:
     div:
         layout:
             div(style = 'width:100%; padding: 0 10px;'):
-                modal:
                 div(v-show = 'show_explorer', class = 'explorer'):
-                    folder_content:
+                    folder_content(@blur = 'hide_explorer'):
                 editor:
 
 v-pyj:
@@ -13,20 +12,20 @@ import_amd vue as Vue, codemirror/lib/codemirror as CodeMirror, rapydscript_web 
 import_amd axios.min as axios
 
 from asset.rs_vue import RS_vue, V_collector
-import asset.common as common
-import components.folder_content as folder_content, components.editor as editor,\
-        components.modal as modal, components.confirm as confirm,\
-        components.app_selector as app_selector,components.base_layout as base_layout
-import components.error as cerror
+from asset import common
+
+import components with \
+    confirm, error, app_selector, login,\
+    folder_content, editor, base_layout, modal
+
 from store.root import Store
 
-
 Vue.use(Store)
-Vue.options.components = {
-    confirm: confirm.make(),
-    error: cerror.make(),
-    app_selector: app_selector.make(),
-}
+def reg_components():
+    comps = 'confirm error app_selector login modal'.split(/ +/)
+    Vue.options.components = { c:components[c].make() for c in comps }
+reg_components()
+
 web23py = document.getElementsByTagName('meta')[0].dataset.web23py
 window.store = Store(rs_req, web23py)
 
@@ -37,21 +36,29 @@ class App(RS_vue):
         self.store = store
         self.template = app_templ
         self.map_store = {
+            try_connect: 'try_connect*',
             show_explorer: 'show_explorer',
-            w23p_app: 'w23p_app'
+            w23p_app: 'w23p_app',
+            is_logged: 'is_logged',
+            toggle_explorer: 'toggle_explorer~'
         }
-        self.components = {
-            folder_content: folder_content.make(),
-            editor: editor.make(),
-            layout: base_layout.make(),
-            modal: modal.make(),
-        }
+        comps = 'folder_content editor base_layout'.split(/ +/)
+        reg_as = {base_layout: 'layout'}
+        self.components = {(reg_as[c] or c):components[c].make() for c in comps }
 
     def _init_data(self):
         return {}
 
+    @vc.meth
+    def hide_explorer(self):
+        setTimeout(def(): self.toggle_explorer(False);, 100)
+
     @common.asyncer
     def mounted(self):
+        store.commit('toggle_busy', False)
+        while not self.is_logged:
+            yield self.try_connect()
+        store.commit('toggle_busy', True)
         yield store.dispatch('w23p_app_list')
         store.commit('toggle_busy', False)
         while not self.w23p_app:
@@ -64,8 +71,4 @@ exports.start = def(el):
     app = App()
     (new Vue(app)).$mount(el or '#app')
 
-def main():
-    pass
-if __name__=='__main__':
-    main()
 ---

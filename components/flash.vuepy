@@ -1,6 +1,6 @@
 
 v-def templ_flash:
-    div(id='flash', :class='cls'):
+    div(id='flash', :class='cls' ):
         template(v-if = 'component'):
             component(:is = 'component', v-bind = 'cargs'):
         template(v-else):
@@ -45,6 +45,7 @@ class Flash(RS_vue):
         t = 1000
         if self.msg:
             t = self.msg.split(/\W+/).length*900
+            if t > 4e3: t = 4e3
         self.hider = setTimeout(self.hide, t)
 
     @vc.meth
