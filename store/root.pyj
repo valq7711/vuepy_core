@@ -13,7 +13,7 @@ def default_state():
         ctask: None,
         flash: {msg:'Hi', status:'', component: None, cargs: None},
         is_busy: True,
-        menus: app_menu.get_factory().default(),
+        menus: None,
         web23py: None, # web2py | web3py
         w23p_app: None,
         w23p_app_list: None,
@@ -92,6 +92,7 @@ class Store(RS_store):
         #self.vue
         self.state_api = State(self.vue, self.getter_factory.bind(self))
         self.state_api.state.web23py = web23py
+        self.state_api.state.menus = app_menu.get_menu(web23py)
         self.actions = vc._actions
 
         # api
