@@ -73,3 +73,4 @@ exports.start = def(el, params):
     (new Vue(app)).$mount(el or '#app')
 
 ---
+
