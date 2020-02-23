@@ -43,7 +43,7 @@ class RS_require:
         ok  = self.load_stack[-1].ok
         def mount_mod(req_mods):
             self.load_stack.pop()
-            self.mount_module(mod_name, mod.apply(null, req_mods))
+            self.mount_module(mod_name, mod.apply(None, req_mods))
             ok(self.modules[mod_name])
         if req_list and req_list.length:
             self.load_amd_list(req_list, mod_name).then(mount_mod)
