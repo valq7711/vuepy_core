@@ -88,20 +88,22 @@ class State(RS_state_api):
         self.state.flash.status = status
 
 class Store(RS_store):
-    def __init__(self, rs_req, web23py):
+    def __init__(self, rs_req, params):
         #self.vue
+        web23py = params.web23py
         self.state_api = State(self.vue, self.getter_factory.bind(self))
         self.state_api.state.web23py = web23py
         self.state_api.state.menus = app_menu.get_menu(web23py)
         self.actions = vc._actions
 
         # api
-        self_app = window.location.pathname.split('/',2)[1]
+        #self_app = window.location.pathname.split('/',2)[1]
+        self_app = params.app_root
         self.api = {}
         api_baseURL = web23py is 'web3py'? self_app : self_app + '/default/api'
         self.api.server = server.API(
             rs_req.get('axios.min'),
-            '/' + api_baseURL,
+            api_baseURL,
             self.$bus,
             def(): return self.dispatch('start_modal', 'login');
         )
