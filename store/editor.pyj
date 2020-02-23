@@ -340,7 +340,7 @@ class Store(RS_store):
             name: 'htmlmixed',
             tags: {
                 script: [["type", /^text\/(x-)?python$/, "text/x-python"],
-                [null, null, "javascript"]]
+                [None, None, "javascript"]]
             }
         }
         ext = fp.split('.')[-1]

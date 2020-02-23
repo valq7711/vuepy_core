@@ -12,7 +12,8 @@ html:
     head:
         meta(charset='utf-8',
              data-web23py = '[[=web23py]]',
-             data-static_ver = '[[=static_version]]'
+             data-static_ver = '[[=static_version]]',
+             data-app_root = '[[=app_root]]'
         ):
         favicon(href= '[[=URL("static", "images/favicon.ico")]]'):
         CSS:
@@ -29,16 +30,20 @@ v-pyj:
     window.onbeforeunload = def(): return 'hi!';
 
     def init():
-        static_ver= document.getElementsByTagName('meta')[0].dataset.static_ver
+        params = document.getElementsByTagName('meta')[0].dataset
+        static_ver= params.static_ver
         static_ver = static_ver and '/_' + static_ver or ''
-        js_root_dir= window.location.pathname.split('/', 2).join('/') + \
-                    '/static'+ static_ver +'/js/'
+        app_root = params.app_root or ''
+        if app_root[-1] is '/':
+            app_root = app_root[:-1]
+        js_root_dir = app_root + '/static'+ static_ver +'/js/'
+
         window.rs_req = rs_req = rs_require.RS_require({js_root_dir: js_root_dir}) # exposes define()
         load_js.load(rs_req)
         .then(def():
               rs_req.load_amd('app', '')
               .then(def(app):
-                    app.start('#app')
+                    app.start('#app', params)
                     print('Done!!!')
                )
          )
