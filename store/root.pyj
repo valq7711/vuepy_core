@@ -145,8 +145,7 @@ class Store(RS_store):
         # server events
         def on_server(a):
             if a.event is 'error':
-                w2p_err = (r = a.data.response) and r.headers.web2py_error or ''
-                self.flash(f'server error: ${a.data.message} ${w2p_err}', 'error')
+                self.flash('server error: ' + a.data.message, 'error')
             else:
                 msg = a.data.flash
                 if msg:
@@ -316,45 +315,26 @@ class Store(RS_store):
     def reload_apps(self):
         self.api.server.get('reload')
 
-    @asyncer
-    def compile_py(self, code, fp):
-        resp = yield self.api.server.post('compile_py',
-                      {w23p_app: self.get('w23p_app'), code, fp})
-        data = resp.data
-        err =  data.err and Object.assign(Error(), data.err)
-        if err:
-            err.filename = fp
-            raise err
-        return code
-
     @vc.action
-    @asyncer
     def compile(self, compiler, s, fp, compile_only):
         c_map = {
             'vuepy':vuepy_compile,
             'rs':rs_compile,
             'rapydscript':rs_compile,
-            'python': def(s, fp): return self.compile_py(s, fp);
         }
         if not c_map[compiler]:
             self.flash('Can`t compile ' + fp, 'warn')
             return
         try:
-            compiled = yield c_map[compiler](s, fp, self.api.fs)
+            compiled = c_map[compiler](s, fp, self.api.fs)
         except as err:
-            if err.response: # server error
-                raise err
             self.commit('compile_error', err)
             return {error:err}
         self.commit('compile_error', None)
         if not compile_only:
             fs = self.api.fs
             off = fs.on('write_file', def(fid): self.dispatch('/editor.reload', fid);)
-            if compiler is 'python':
-                fid = fs.id_by_path(fp)
-                fs.write_file(fid, compiled)
-            else:
-                vuepy_output.output(compiled, self.api.fs, self.output_path_map)
+            vuepy_output.output(compiled, self.api.fs, self.output_path_map)
             off()
             self.$emit('fs_changed')
         return compiled
