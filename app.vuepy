@@ -26,12 +26,12 @@ def reg_components():
     Vue.options.components = { c:components[c].make() for c in comps }
 reg_components()
 
-web23py = document.getElementsByTagName('meta')[0].dataset.web23py
-window.store = Store(rs_req, web23py)
 
 vc = V_collector()
 class App(RS_vue):
-    def __init__(self):
+    def __init__(self, params):
+        #web23py = document.getElementsByTagName('meta')[0].dataset.web23py
+        store = window.store = Store(rs_req, params)
         super(vc)
         self.store = store
         self.template = app_templ
@@ -68,8 +68,8 @@ class App(RS_vue):
                 yield store.dispatch('load_fs_from_srv', app2edit)
 
 # this is an AMD module, so we should do explicit export
-exports.start = def(el):
-    app = App()
+exports.start = def(el, params):
+    app = App(params)
     (new Vue(app)).$mount(el or '#app')
 
 ---
