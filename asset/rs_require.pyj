@@ -1,5 +1,41 @@
 import asset.fs_path as fs_path
-from asset.common import asyncer
+
+class Module:
+    @staticmethod
+    def __init_class__(load_amd):
+        this.prototype.load_amd = load_amd
+
+    def __init__(self, def_args, path):
+        self.loaded = False
+        self.ok_err = None
+        self.path = path or ''
+        self.deps = []
+        self.dep_mods = {}
+        if Array.isArray(def_args[0]):
+            self.deps = def_args.shift()
+            self.dep_count = self.deps.length
+        self.init = def_args[0]
+        self.load_deps().then(self.run.bind(self))
+
+    def on_load_script(self, ok_err):
+        self.ok_err = ok_err
+        if self.loaded:
+            ok_err.ok(self.exports)
+
+    def run(self, deps):
+        for i, p in enumerate(self.deps):
+            self.dep_mods[p] = deps[i]
+        self.exports = self.init.apply(None, deps)
+        self.loaded = True
+        if self.ok_err:
+            self.ok_err.ok(self.exports)
+
+    def load_deps(self):
+        p = []
+        for mod_path in self.deps:
+            p.push(self.load_amd(mod_path, self.path))
+        return Promise.all(p)
+
 
 def doc_ready(arg_to_pass):
     p = def(ok, err):
@@ -11,81 +47,97 @@ def doc_ready(arg_to_pass):
         return Promise.resolve(arg_to_pass)
     return Promise(p)
 
-def prom(f):
-    ret = def():
-        self = this
-        args = Array.prototype.slice.call(arguments)
-        p = def(ok, err):
-            args.push(ok, err)
-            f.apply(self, args)
-        return Promise(p)
-    return ret
-
 class RS_require:
     def __init__(self, cfg):
         self.cfg = cfg
         self.modules = {}
-        self.load_stack = []
+        self._modules = []
         define = window.define = def(req_list, mod):
             self.define(req_list, mod)
-        define.amd = True
+        define.amd =  {}
         self.fs_path = fs_path
+        Module.__init_class__(self.load_amd.bind(self))
 
     def mount_module(self, as_name, mod):
-        self.modules[as_name]  =  mod
+        self.modules[as_name]  = {exports: mod, loaded: True, req_chain:[]}
 
-    def define(self, req_list, mod):
-        if type(req_list)=='Function': # no requirements
-            mod = req_list
-            req_list = []
-        mod_name  = self.load_stack[-1].name
-        #print(mod_name, ' requires: ', req_list)
-        ok  = self.load_stack[-1].ok
-        def mount_mod(req_mods):
-            self.load_stack.pop()
-            self.mount_module(mod_name, mod.apply(None, req_mods))
-            ok(self.modules[mod_name])
-        if req_list and req_list.length:
-            self.load_amd_list(req_list, mod_name).then(mount_mod)
+    def define(self, req_list, cb):
+        def make_mod(path):
+            mod = Module([req_list, cb], path)
+            self._modules.push(mod)
+            return mod
+        if (cs = document.currentScript) and cs.dataset.rs_req:
+            self.make_mod = make_mod
         else:
-            mount_mod([])
+            make_mod()
+
+    def on_load_script(self, path, ok_err):
+        # if no make_mode then suppose that it is not amd-script
+        # - do nothing
+        if self.make_mod:
+            mod = self.make_mod(path)
+            self.make_mod = None
+            mod.on_load_script(ok_err)
 
 
-    @prom
-    def load_amd(self, name, requester, ok, err):
+    def on_error(self, name):
+        console.log('error on load: ', name)
+
+    def load_amd(self, name, requester):
+        #print(f'${requester} -> ${name}')
         is_url = /https?:\/{2}.*/.test(name)
+        src = name
         if not is_url:
             if name.startsWith('./'):
                 name = name[2:]
             if requester:
                 name = fs_path.rel_path_join(requester.split('/')[:-1].join('/'), name)
-        if self.load_stack.find(def(it): return it.name == name;):
-            raise Error('Circular dependency: ' + name +  ' and ' + requester)
-        ret = self.modules[name]
-        if ret:
-            ok(ret)
-        else:
-            s = document.createElement('script')
-            src = name
-            if not is_url:
-                js_root_dir = self.cfg and self.cfg.js_root_dir or ''
-                src = fs_path.rel_path_join(js_root_dir, src)
-            s.src = src + '.js'
-            s.async = True
-            s.onerror = def():
-                err(name)
-            self.load_stack.push({name: name, ok: ok})
-            document.head.appendChild(s) # run define
+            js_root_dir = self.cfg and self.cfg.js_root_dir or ''
+            src = fs_path.rel_path_join(js_root_dir, name)
 
-    @asyncer
+        if (mod = self.modules[name]):
+            if not mod.loaded:
+                if mod.req_chain.find(def(it): return it is name;):
+                    raise Error('Circular dependency: ' + name +  ' and ' + requester)
+                mod.req_chain.push(requester)
+            exp = mod.exports
+            #print(f'${name}: already in process')
+            return  isinstance(exp, Promise) ? exp :  Promise.resolve(exp)
+
+        s = document.createElement('script')
+        s.src = src + '.js'
+        s.async = True
+        s.onerror = def():
+            self.on_error(name)
+        s.dataset.rs_req = True
+        ok_err = {}
+        p = Promise(def(ok, err):
+                nonlocal ok_err
+                ok_err = {ok, err}
+        )
+
+        s.onload = def(): self.on_load_script(name, ok_err);
+        document.head.appendChild(s) # run define
+        p.then(def(exports):
+            if (mod = self.modules[name]):
+                mod.loaded = True
+                mod.exports = exports
+                #print(f'${name}: done!')
+            else:
+                raise Error('load_stack seems corrupted')
+        )
+        req_chain = requester ? [requester] : []
+        self.modules[name] = {req_chain:req_chain, exports: p, loaded: False}
+        return p
+
     def load_amd_list(self, mod_lst, requester):
         ret = []
         for mod in mod_lst:
-            ret.push(yield self.load_amd(mod, requester))
-        return ret
+            ret.push(self.load_amd(mod, requester))
+        return Promise.all(ret)
 
     def get(self, name):
         mod = self.modules[name]
         if not mod:
             raise Error('Module `' + name + '` is not loaded')
-        return self.modules[name]
+        return self.modules[name].exports
