@@ -29,6 +29,7 @@ v-pyj:
     import load_js
     window.onbeforeunload = def(): return 'hi!';
 
+
     def init():
         params = document.getElementsByTagName('meta')[0].dataset
         static_ver= params.static_ver
